@@ -16,17 +16,14 @@ var tags = []config.Tag{
 	{
 		ID:         "ns=4;s=|var|CODESYS Control for Raspberry Pi MC SL.Application.GVL.bV001",
 		ColumnName: "bV001",
-		ValueType:  config.Bool,
 	},
 	{
 		ID:         "ns=4;s=|var|CODESYS Control for Raspberry Pi MC SL.Application.GVL.iV002",
 		ColumnName: "iV002",
-		ValueType:  config.Int,
 	},
 	{
 		ID:         "ns=4;s=|var|CODESYS Control for Raspberry Pi MC SL.Application.GVL.rV003",
 		ColumnName: "rV003",
-		ValueType:  config.Float,
 	},
 }
 

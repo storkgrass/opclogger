@@ -22,17 +22,8 @@ type Tag struct {
 	ID         string     `json:"id"`
 	NodeID     *ua.NodeID `json:"-"`
 	ColumnName string     `json:"column_name"`
-	ValueType  ValueType  `json:"value_type"`
 	Value      any        `json:"-"`
 }
-
-type ValueType string
-
-const (
-	Bool  ValueType = "bool"
-	Int   ValueType = "int"
-	Float ValueType = "float"
-)
 
 func LoadConfig(path string) (*Config, error) {
 	f, err := os.Open(path)

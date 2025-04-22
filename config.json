@@ -6,13 +6,11 @@
 			"tags": [
 				{
 					"id": "ns=2;s=TI001",
-					"column_name": "temp01",
-					"value_type": "float"
+					"column_name": "temp01"
 				},
 				{
 					"id": "ns=2;s=TI002",
-					"column_name": "temp02",
-					"value_type": "float"
+					"column_name": "temp02"
 				}
 			]
 		},
@@ -22,13 +20,11 @@
 			"tags": [
 				{
 					"id": "ns=2;s=MI001",
-					"column_name": "humid01",
-					"value_type": "float"
+					"column_name": "humid01"
 				},
 				{
 					"id": "ns=2;s=MI002",
-					"column_name": "humid02",
-					"value_type": "float"
+					"column_name": "humid02"
 				}
 			]
 		}

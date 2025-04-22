@@ -162,13 +162,7 @@ func readValues(tags []config.Tag, client *opcua.Client, ctx context.Context) er
 		if result.Status != ua.StatusOK {
 			continue
 		}
-
-		cv, err := convertValue(result.Value, tags[i].ValueType)
-		if err != nil {
-			continue
-		}
-
-		tags[i].Value = cv
+		tags[i].Value = result.Value.Value()
 	}
 
 	return nil
@@ -213,79 +207,4 @@ func writeDatabase(group config.TagGroup, db *sqlx.DB, ctx context.Context) erro
 	}
 
 	return tx.Commit()
-}
-
-func convertValue(v *ua.Variant, vtype config.ValueType) (interface{}, error) {
-	if v == nil {
-		return nil, nil
-	}
-
-	val := v.Value()
-
-	switch vtype {
-	case config.Bool:
-		switch vt := val.(type) {
-		case bool:
-			return vt, nil
-		case int:
-		case int8:
-		case int16:
-		case int32:
-		case int64:
-		case uint:
-		case uint8:
-		case uint16:
-		case uint32:
-		case uint64:
-		case float32:
-		case float64:
-			return vt != 0, nil
-		}
-	case config.Int:
-		switch vt := val.(type) {
-		case bool:
-			if vt {
-				return 1, nil
-			}
-			return 0, nil
-		case int:
-		case int8:
-		case int16:
-		case int32:
-		case int64:
-		case uint:
-		case uint8:
-		case uint16:
-		case uint32:
-		case uint64:
-			return vt, nil
-		case float32:
-		case float64:
-			return int(vt), nil
-		}
-	case config.Float:
-		switch vt := val.(type) {
-		case bool:
-			if vt {
-				return 1, nil
-			}
-			return 0, nil
-		case int:
-		case int8:
-		case int16:
-		case int32:
-		case int64:
-		case uint:
-		case uint8:
-		case uint16:
-		case uint32:
-		case uint64:
-			return vt, nil
-		case float32:
-		case float64:
-			return vt, nil
-		}
-	}
-
-	return nil, fmt.Errorf("unknown ValueType: %v", vtype)
 }
