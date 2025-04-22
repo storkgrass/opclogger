@@ -14,12 +14,18 @@ import (
 	"github.com/gopcua/opcua"
 	"github.com/gopcua/opcua/ua"
 	"github.com/jmoiron/sqlx"
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 
 	"github.com/storkgrass/opclogger/config"
 )
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("failed to loading .env file: %v", err)
+	}
+
 	cfg, err := config.LoadConfig("config.json")
 	if err != nil {
 		log.Fatalf("failed to load the config.json: %v", err)
@@ -38,8 +44,8 @@ func main() {
 		cancel()
 	}()
 
-	opcURL := "opc.tcp://localhost:4840"
-	dbURL := "postgres://username:password@localhost:5432/opclog?sslmode=disable"
+	opcURL := os.Getenv("OPCUA_ENDPOINT")
+	dbURL := os.Getenv("DATABASE_URL")
 
 	// Establish a connection to the PostgreSQL database
 	db, err := sqlx.Connect("postgres", dbURL)
