@@ -22,18 +22,19 @@ import (
 func main() {
 	cfg, err := config.LoadConfig("config.json")
 	if err != nil {
-		log.Fatalf(": %v", err)
+		log.Fatalf("failed to load the config.json: %v", err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	var wg sync.WaitGroup
 
-	// signals
+	// Listen for OS interrupt or termination signals and trigger graceful shutdown
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
-		<-sigs
-		log.Println("received exit signal")
+		// Block until a signal is received
+		sig := <-sigs
+		log.Printf("received OS signal: %s. Initiating graceful shutdown...", sig)
 		cancel()
 	}()
 
