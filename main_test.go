@@ -1,12 +1,10 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"testing"
 
-	"github.com/gopcua/opcua"
 	"github.com/gopcua/opcua/ua"
 	"github.com/joho/godotenv"
 	"github.com/storkgrass/opclogger/config"
@@ -48,25 +46,15 @@ func TestMain(m *testing.M) {
 }
 
 func TestReadValues(t *testing.T) {
+	ctx := t.Context()
+
 	opcURL := os.Getenv("OPCUA_ENDPOINT")
 	opcSecurityPolicy := os.Getenv("OPCUA_SECURITY_POLICY")
 	opcSecurityMode := os.Getenv("OPCUA_SECURITY_MODE")
-	// Establish a connection to the OPC UA server
-	opcOpts := []opcua.Option{
-		opcua.SecurityPolicy(opcSecurityPolicy),
-		opcua.SecurityModeString(opcSecurityMode),
-	}
 
-	t.Log(opcURL)
-	c, err := opcua.NewClient(opcURL, opcOpts...)
+	c, err := newOPCUAClient(opcURL, opcSecurityPolicy, opcSecurityMode, ctx)
 	if err != nil {
 		t.Fatalf("failed to create instance of the OPC UA client: %v", err)
-	}
-
-	ctx := context.Background()
-
-	if err := c.Connect(ctx); err != nil {
-		t.Fatalf("failed to connect to the OPC UA server: %v", err)
 	}
 	defer c.Close(ctx)
 

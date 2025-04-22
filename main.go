@@ -44,28 +44,21 @@ func main() {
 		cancel()
 	}()
 
-	dbURL := os.Getenv("DATABASE_URL")
 	// Establish a connection to the PostgreSQL database
+	dbURL := os.Getenv("DATABASE_URL")
 	db, err := sqlx.Connect("postgres", dbURL)
 	if err != nil {
 		log.Fatalf("failed to connect to the database: %v", err)
 	}
 	defer db.Close()
 
+	// Establish a connection to the OPC UA server
 	opcURL := os.Getenv("OPCUA_ENDPOINT")
 	opcSecurityPolicy := os.Getenv("OPCUA_SECURITY_POLICY")
 	opcSecurityMode := os.Getenv("OPCUA_SECURITY_MODE")
-	// Establish a connection to the OPC UA server
-	opcOpts := []opcua.Option{
-		opcua.SecurityPolicy(opcSecurityPolicy),
-		opcua.SecurityModeString(opcSecurityMode),
-	}
-	client, err := opcua.NewClient(opcURL, opcOpts...)
+	client, err := newOPCUAClient(opcURL, opcSecurityPolicy, opcSecurityMode, ctx)
 	if err != nil {
-		log.Fatalf("failed to create instance of the OPC UA client: %v", err)
-	}
-	if err := client.Connect(ctx); err != nil {
-		log.Fatalf("failed to connect to the OPC UA server: %v", err)
+		log.Fatalf("failed to initialize OPC UA client: %v", err)
 	}
 	defer client.Close(ctx)
 
@@ -128,6 +121,22 @@ func main() {
 		//TODO
 		//Forced shutdown due to timeout
 	}
+}
+
+func newOPCUAClient(endpointURL string, securityPolicy string, securityMode string, ctx context.Context) (*opcua.Client, error) {
+	opcOpts := []opcua.Option{
+		opcua.SecurityPolicy(securityPolicy),
+		opcua.SecurityModeString(securityMode),
+	}
+	client, err := opcua.NewClient(endpointURL, opcOpts...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create instance of the OPC UA client: %v", err)
+	}
+	if err := client.Connect(ctx); err != nil {
+		return nil, fmt.Errorf("failed to connect to the OPC UA server: %v", err)
+	}
+
+	return client, nil
 }
 
 func readValues(tags []config.Tag, client *opcua.Client, ctx context.Context) error {
