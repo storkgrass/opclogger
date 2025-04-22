@@ -145,18 +145,18 @@ func readValues(tags []config.Tag, client *opcua.Client, ctx context.Context) er
 		return fmt.Errorf("invalid response: %v", resp.Results)
 	}
 
-	for i, tag := range tags {
+	for i := range tags {
 		result := resp.Results[i]
 		if result.Status != ua.StatusOK {
 			continue
 		}
 
-		cv, err := convertValue(result.Value, tag.ValueType)
+		cv, err := convertValue(result.Value, tags[i].ValueType)
 		if err != nil {
 			continue
 		}
 
-		tag.Value = cv
+		tags[i].Value = cv
 	}
 
 	return nil
