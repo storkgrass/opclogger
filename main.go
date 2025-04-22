@@ -44,9 +44,7 @@ func main() {
 		cancel()
 	}()
 
-	opcURL := os.Getenv("OPCUA_ENDPOINT")
 	dbURL := os.Getenv("DATABASE_URL")
-
 	// Establish a connection to the PostgreSQL database
 	db, err := sqlx.Connect("postgres", dbURL)
 	if err != nil {
@@ -54,8 +52,15 @@ func main() {
 	}
 	defer db.Close()
 
+	opcURL := os.Getenv("OPCUA_ENDPOINT")
+	opcSecurityPolicy := os.Getenv("OPCUA_SECURITY_POLICY")
+	opcSecurityMode := os.Getenv("OPCUA_SECURITY_MODE")
 	// Establish a connection to the OPC UA server
-	client, err := opcua.NewClient(opcURL, opcua.SecurityMode(ua.MessageSecurityModeNone))
+	opcOpts := []opcua.Option{
+		opcua.SecurityPolicy(opcSecurityPolicy),
+		opcua.SecurityModeString(opcSecurityMode),
+	}
+	client, err := opcua.NewClient(opcURL, opcOpts...)
 	if err != nil {
 		log.Fatalf("failed to create instance of the OPC UA client: %v", err)
 	}
