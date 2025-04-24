@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/signal"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -19,6 +20,17 @@ import (
 
 	"github.com/storkgrass/opclogger/config"
 )
+type EnvVars struct {
+	DATABASE_URL          string
+	OPCUA_ENDPOINT        string
+	OPCUA_SECURITY_POLICY string
+	OPCUA_SECURITY_MODE   string
+	TIME_COLUMN_NAME      string
+	OPCUA_MAXRETRIES      int
+	OPCUA_TIMEOUT         int
+	DATABASE_MAXRETRIES   int
+	DATABASE_TIMEOUT      int
+}
 
 func main() {
 	err := godotenv.Load()
@@ -98,29 +110,66 @@ func main() {
 		}(interval, tables, ctx)
 	}
 
-	// Wait for the context to be done
-	<-ctx.Done()
-
-	// Create a new context with a timeout to wait for the WaitGroup
-	waitCtx, waitCancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer waitCancel()
-
-	done := make(chan struct{})
-	go func() {
-		// Wait for all goroutines in the WaitGroup to complete
-		wg.Wait()
-		// Signal that the WaitGroup has finished
-		close(done)
-	}()
-
-	select {
-	case <-done:
-		//TODO
-		//Graceful shutdown
-	case <-waitCtx.Done():
-		//TODO
-		//Forced shutdown due to timeout
+func getEnvOrDefault(key, defaultValue string) string {
+	value, exists := os.LookupEnv(key)
+	if !exists {
+		return defaultValue
 	}
+	return value
+}
+
+func loadEnvironment() (*EnvVars, error) {
+	if err := godotenv.Load(".env"); err != nil {
+		logger.Warningf(".env file not found or failed to load: %v. Continuing with existing environment variables.", err)
+	}
+
+	appEnv := getEnvOrDefault("APP_ENV", "development")
+	pattern := fmt.Sprintf(".env.%s*", appEnv)
+	if matches, err := filepath.Glob(pattern); err == nil && len(matches) > 0 {
+		for _, match := range matches {
+			if err := godotenv.Overload(match); err != nil {
+				logger.Warningf("Failed to load environment file %s: %v", match, err)
+			}
+		}
+	}
+
+	requiredVars := []string{
+		"DATABASE_URL",
+		"OPCUA_ENDPOINT",
+		"OPCUA_SECURITY_POLICY",
+		"OPCUA_SECURITY_MODE",
+	}
+	for _, varName := range requiredVars {
+		_, ok := os.LookupEnv(varName)
+		if !ok {
+			return nil, fmt.Errorf("environment variable %s is not set. Please check your .env file or system environment variables.", varName)
+		}
+	}
+
+	envVars := &EnvVars{
+		DATABASE_URL:          os.Getenv("DATABASE_URL"),
+		OPCUA_ENDPOINT:        os.Getenv("OPCUA_ENDPOINT"),
+		OPCUA_SECURITY_POLICY: os.Getenv("OPCUA_SECURITY_POLICY"),
+		OPCUA_SECURITY_MODE:   os.Getenv("OPCUA_SECURITY_MODE"),
+		TIME_COLUMN_NAME:      getEnvOrDefault("TIME_COLUMN_NAME", "timestamp"),
+	}
+
+	var err error
+	if envVars.OPCUA_MAXRETRIES, err = strconv.Atoi(getEnvOrDefault("OPCUA_MAXRETRIES", "1000000")); err != nil || envVars.OPCUA_MAXRETRIES < 1 {
+		return nil, fmt.Errorf("OPCUA_MAXRETRIES must be a positive integer: %v", err)
+	}
+	if envVars.OPCUA_TIMEOUT, err = strconv.Atoi(getEnvOrDefault("OPCUA_TIMEOUT", "5")); err != nil || envVars.OPCUA_TIMEOUT < 1 {
+		return nil, fmt.Errorf("OPCUA_TIMEOUT must be a positive integer: %v", err)
+	}
+	if envVars.DATABASE_MAXRETRIES, err = strconv.Atoi(getEnvOrDefault("DATABASE_MAXRETRIES", "1000000")); err != nil || envVars.DATABASE_MAXRETRIES < 1 {
+		return nil, fmt.Errorf("DATABASE_MAXRETRIES must be a positive integer: %v", err)
+	}
+	if envVars.DATABASE_TIMEOUT, err = strconv.Atoi(getEnvOrDefault("DATABASE_TIMEOUT", "5")); err != nil || envVars.DATABASE_TIMEOUT < 1 {
+		return nil, fmt.Errorf("DATABASE_TIMEOUT must be a positive integer: %v", err)
+	}
+
+	return envVars, nil
+}
 }
 
 func newOPCUAClient(endpointURL string, securityPolicy string, securityMode string, ctx context.Context) (*opcua.Client, error) {
