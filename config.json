@@ -1,30 +1,30 @@
 {
 	"tag_groups": [
 		{
-			"table_name": "temperature_log",
-			"interval": 30,
+			"table_name": "weather.sensor",
+			"interval": 10,
 			"tags": [
 				{
-					"id": "ns=2;s=TI001",
-					"column_name": "temp01"
+					"id": "ns=4;s=|var|CODESYS Control for Raspberry Pi MC SL.Application.GVL.weather_humid",
+					"column_name": "temperature"
 				},
 				{
-					"id": "ns=2;s=TI002",
-					"column_name": "temp02"
+					"id": "ns=4;s=|var|CODESYS Control for Raspberry Pi MC SL.Application.GVL.weather_temp",
+					"column_name": "humidity"
 				}
 			]
 		},
 		{
-			"table_name": "humidity_log",
-			"interval": 60,
+			"table_name": "house0.sensor",
+			"interval": 30,
 			"tags": [
 				{
-					"id": "ns=2;s=MI001",
-					"column_name": "humid01"
+					"id": "ns=4;s=|var|CODESYS Control for Raspberry Pi MC SL.Application.GVL.house0_temp",
+					"column_name": "temperature"
 				},
 				{
-					"id": "ns=2;s=MI002",
-					"column_name": "humid02"
+					"id": "ns=4;s=|var|CODESYS Control for Raspberry Pi MC SL.Application.GVL.house0_humid",
+					"column_name": "humidity"
 				}
 			]
 		}
