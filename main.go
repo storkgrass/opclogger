@@ -161,7 +161,7 @@ func (p *program) run() error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize OPC UA client: %v, endpoint: %s, security policy: %s, security mode: %s", err, envVars.OPCUA_ENDPOINT, envVars.OPCUA_SECURITY_POLICY, envVars.OPCUA_SECURITY_MODE)
 	}
-	defer client.Close(ctx)
+	defer client.Close(context.Background())
 
 	// Grouping TagGroups by their interval time
 	intervalMap := make(map[int][]config.TagGroup)
