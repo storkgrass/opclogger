@@ -34,7 +34,7 @@ func LoadConfig(path string) (*Config, error) {
 
 	var cfg Config
 	if err := json.NewDecoder(f).Decode(&cfg); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to decode config file %s: %v", path, err)
 	}
 
 	for _, gp := range cfg.TagGroups {
