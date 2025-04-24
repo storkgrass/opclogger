@@ -29,6 +29,8 @@ type program struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
+	db     *sqlx.DB
+	client *opcua.Client
 }
 
 type EnvVars struct {
@@ -64,6 +66,21 @@ func (p *program) Stop(s service.Service) error {
 	done := make(chan struct{})
 	go func() {
 		p.wg.Wait()
+		if p.client != nil {
+			if err := p.client.Close(context.Background()); err != nil {
+				logger.Errorf("failed to close OPC UA client connection: %v", err)
+			} else {
+				logger.Info("OPC UA client connection closed successfully.")
+			}
+		}
+		if p.db != nil {
+			if err := p.db.Close(); err != nil {
+				logger.Errorf("failed to close database connection: %v", err)
+			} else {
+				logger.Info("Database connection closed successfully.")
+			}
+		}
+
 		close(done)
 	}()
 
@@ -150,18 +167,17 @@ func (p *program) run() error {
 	}
 
 	// Establish a connection to the PostgreSQL database
-	db, err := initDatabase(p.ctx, envVars.DATABASE_URL)
+	p.db, err = initDatabase(p.ctx, envVars.DATABASE_URL)
 	if err != nil {
 		return fmt.Errorf("failed to initialize database: %v", err)
 	}
-	defer db.Close()
 
 	// Establish a connection to the OPC UA server
-	client, err := initOPCUAClient(p.ctx, envVars.OPCUA_ENDPOINT, envVars.OPCUA_SECURITY_POLICY, envVars.OPCUA_SECURITY_MODE)
+	p.client, err = initOPCUAClient(p.ctx, envVars.OPCUA_ENDPOINT, envVars.OPCUA_SECURITY_POLICY, envVars.OPCUA_SECURITY_MODE)
 	if err != nil {
 		return fmt.Errorf("failed to initialize OPC UA client: %v, endpoint: %s, security policy: %s, security mode: %s", err, envVars.OPCUA_ENDPOINT, envVars.OPCUA_SECURITY_POLICY, envVars.OPCUA_SECURITY_MODE)
 	}
-	defer client.Close(context.Background())
+	logger.Infof("Connected to OPC UA server: %s", envVars.OPCUA_ENDPOINT)
 
 	// Grouping TagGroups by their interval time
 	intervalMap := make(map[int][]config.TagGroup, len(cfg.TagGroups))
@@ -181,10 +197,10 @@ func (p *program) run() error {
 				select {
 				case <-ticker.C:
 					for i := range groups {
-						if err := readValues(ctx, groups[i].Tags, client); err != nil {
-							if state := client.State(); state == opcua.Disconnected {
+						if err := readValues(ctx, groups[i].Tags, p.client); err != nil {
+							if state := p.client.State(); state == opcua.Disconnected {
 								logger.Warningf("OPC UA client is disconnected, retrying connection...")
-								if err := retryOpcuaConnect(ctx, client, envVars.OPCUA_MAXRETRIES, time.Duration(envVars.OPCUA_TIMEOUT)*time.Second); err != nil {
+								if err := retryOpcuaConnect(ctx, p.client, envVars.OPCUA_MAXRETRIES, time.Duration(envVars.OPCUA_TIMEOUT)*time.Second); err != nil {
 									logger.Errorf("failed to reconnect to the OPC UA server: %v, endpoint: %s", err, envVars.OPCUA_ENDPOINT)
 								}
 							} else {
@@ -193,8 +209,8 @@ func (p *program) run() error {
 							continue
 						}
 
-						if err = writeDatabase(ctx, envVars.TIME_COLUMN_NAME, groups[i], db); err != nil {
-							if err := retryDatabaseConnect(ctx, db, envVars.DATABASE_MAXRETRIES, time.Duration(envVars.DATABASE_TIMEOUT)*time.Second); err != nil {
+						if err = writeDatabase(ctx, envVars.TIME_COLUMN_NAME, groups[i], p.db); err != nil {
+							if err := retryDatabaseConnect(ctx, p.db, envVars.DATABASE_MAXRETRIES, time.Duration(envVars.DATABASE_TIMEOUT)*time.Second); err != nil {
 								logger.Errorf("failed to reconnect to the database: %v", err)
 							}
 							logger.Errorf("failed to write to database: %v", err)
