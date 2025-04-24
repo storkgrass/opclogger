@@ -164,7 +164,7 @@ func (p *program) run() error {
 	defer client.Close(context.Background())
 
 	// Grouping TagGroups by their interval time
-	intervalMap := make(map[int][]config.TagGroup)
+	intervalMap := make(map[int][]config.TagGroup, len(cfg.TagGroups))
 	for _, gp := range cfg.TagGroups {
 		intervalMap[gp.Interval] = append(intervalMap[gp.Interval], gp)
 	}
