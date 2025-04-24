@@ -20,12 +20,12 @@ The following environment variables should be set in a `.env` file or as system 
 | ----------------------- | ----------------------------------------- | ------------- |
 | `DATABASE_URL`          | PostgreSQL connection URL                 | -             |
 | `OPCUA_ENDPOINT`        | OPC UA server endpoint URL                | -             |
-| `OPCUA_SECURITY_POLICY` | OPC UA security policy                    | `None`        |
-| `OPCUA_SECURITY_MODE`   | OPC UA security mode                      | `None`        |
+| `OPCUA_SECURITY_POLICY` | OPC UA security policy                    | -             |
+| `OPCUA_SECURITY_MODE`   | OPC UA security mode                      | -             |
 | `TIME_COLUMN_NAME`      | Timestamp column name in the database     | `timestamp`   |
-| `OPCUA_MAXRETRIES`      | Maximum retries for OPC UA connection     | `3`           |
+| `OPCUA_MAXRETRIES`      | Maximum retries for OPC UA connection     | `1000000`     |
 | `OPCUA_TIMEOUT`         | Timeout for OPC UA connection (seconds)   | `5`           |
-| `DATABASE_MAXRETRIES`   | Maximum retries for database connection   | `3`           |
+| `DATABASE_MAXRETRIES`   | Maximum retries for database connection   | `1000000`     |
 | `DATABASE_TIMEOUT`      | Timeout for database connection (seconds) | `5`           |
 
 ---
