@@ -46,8 +46,6 @@ type EnvVars struct {
 }
 
 func (p *program) Start(s service.Service) error {
-	p.ctx, p.cancel = context.WithCancel(context.Background())
-
 	go func() {
 		if err := p.run(); err != nil {
 			logger.Errorf("Run error: %v", err)
@@ -114,6 +112,7 @@ func main() {
 	}
 
 	prg := &program{}
+	prg.ctx, prg.cancel = context.WithCancel(context.Background())
 	s, err := service.New(prg, svcConfig)
 	if err != nil {
 		log.Fatal(err)
@@ -337,7 +336,7 @@ func retryWithExponentialBackoff(ctx context.Context, operation string, maxRetri
 
 	var err error
 	for retry := range maxRetries {
-		logger.Infof("[%d/%d] Retrying operation: %s", retry+1, maxRetries, operation)
+		// logger.Infof("[%d/%d] Retrying operation: %s", retry+1, maxRetries, operation)
 		timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
 		err = fn(timeoutCtx)
 		cancel()
@@ -435,7 +434,7 @@ func writeDatabase(ctx context.Context, timeColumn string, group config.TagGroup
 
 	_, err = tx.Exec(query, args...)
 	if err != nil {
-		return fmt.Errorf("failed to execution of the query: %v", err)
+		return fmt.Errorf("failed to execute the query: %v", err)
 	}
 
 	return tx.Commit()
