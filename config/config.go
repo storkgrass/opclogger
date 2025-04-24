@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 
@@ -49,4 +50,24 @@ func LoadConfig(path string) (*Config, error) {
 	}
 
 	return &cfg, nil
+}
+
+func (cfg *Config) Validate() error {
+	for _, gp := range cfg.TagGroups {
+		if gp.TableName == "" {
+			return fmt.Errorf("table_name is required")
+		}
+		if gp.Interval <= 0 {
+			return fmt.Errorf("interval must be greater than 0")
+		}
+		for _, tag := range gp.Tags {
+			if tag.ID == "" {
+				return fmt.Errorf("tag ID is required")
+			}
+			if tag.ColumnName == "" {
+				return fmt.Errorf("column_name is required")
+			}
+		}
+	}
+	return nil
 }
